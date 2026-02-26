@@ -46,21 +46,40 @@ def init(platform: str, workspace: str, install: bool):
         console.print(f"\n  Selected: [green]{platform}[/]\n")
     
     config = AgentForgeConfig(platform=platform)
-    workspace_path = Path(workspace) if workspace else Path.home() / ".agentforge"
-    config.workspace = workspace_path
-    
-    # Update config defaults to point to components subdirectories
-    config.memory.path = workspace_path / "components" / "persistent-memory"
-    config.healthkit.path = workspace_path / "components" / "agent-healthkit"
-    
-    # Install components if requested
-    if install:
+
+    # Platform-aware workspace and component path resolution
+    if platform == "openclaw":
+        # OpenClaw: components already live in the OpenClaw workspace — detect them
+        from .adapters.openclaw import OpenClawAdapter
+        adapter = OpenClawAdapter()
+        if adapter.detect():
+            oc_workspace = adapter.get_workspace()
+            if oc_workspace:
+                config.workspace = oc_workspace
+                config.memory.path = oc_workspace / "vector_memory"
+                config.healthkit.path = oc_workspace / "healthkit_internal"
+                console.print(f"  [green]✓ OpenClaw workspace detected:[/] {oc_workspace}")
+            else:
+                config.workspace = Path(workspace) if workspace else Path.home() / ".agentforge"
+        else:
+            console.print("  [yellow]⚠ OpenClaw not detected — using standalone paths[/]")
+            config.workspace = Path(workspace) if workspace else Path.home() / ".agentforge"
+            config.memory.path = config.workspace / "components" / "persistent-memory"
+            config.healthkit.path = config.workspace / "components" / "agent-healthkit"
+    else:
+        workspace_path = Path(workspace) if workspace else Path.home() / ".agentforge"
+        config.workspace = workspace_path
+        config.memory.path = workspace_path / "components" / "persistent-memory"
+        config.healthkit.path = workspace_path / "components" / "agent-healthkit"
+
+    # Install or check components
+    if install and platform != "openclaw":
+        # OpenClaw: components are already installed — no cloning needed
         results = install_all_components(config, console)
         for component, status in results.items():
             icon = "✅" if status["installed"] else "❌"
             console.print(f"  {icon} {component}: {status['message']}")
     else:
-        # Just check components
         results = install_components(config)
         for component, status in results.items():
             icon = "✅" if status["installed"] else "❌"
