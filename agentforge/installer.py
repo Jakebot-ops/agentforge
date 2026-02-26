@@ -101,13 +101,16 @@ def install_components(config: AgentForgeConfig) -> dict:
         else:
             results["dashboard"] = {"installed": False, "message": "Not found."}
     
-    # Check dev pipeline (part of main repo)
+    # Check dev pipeline (Pro feature)
     from .components.pipeline import check_pipeline
     pipeline_check = check_pipeline(config.workspace)
     if pipeline_check["installed"]:
         results["pipeline"] = {"installed": True, "message": f"Found at {pipeline_check['path']}"}
     else:
-        results["pipeline"] = {"installed": False, "message": "Not found in repo."}
+        results["pipeline"] = {
+            "installed": None,  # Not an error — Pro feature
+            "message": "🔒 Pro feature — github.com/sponsors/Jakebot-ops",
+        }
     
     return results
 
@@ -163,9 +166,9 @@ def check_components(config: AgentForgeConfig) -> dict:
     from .components.pipeline import check_pipeline
     pipeline_check = check_pipeline(config.workspace)
     checks["Pipeline"] = {
-        "ok": pipeline_check["installed"],
-        "message": "CodeBot + OpusBot ready" if pipeline_check["installed"] else "Not found",
-        "fix": "Ensure pipeline/ directory exists in workspace"
+        "ok": True,   # Not having Pro is not a failure
+        "message": "CodeBot + OpusBot ready" if pipeline_check["installed"] else "🔒 Pro feature (optional)",
+        "fix": None
     }
     
     return checks

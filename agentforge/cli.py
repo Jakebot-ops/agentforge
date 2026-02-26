@@ -72,17 +72,22 @@ def init(platform: str, workspace: str, install: bool):
         config.memory.path = workspace_path / "components" / "persistent-memory"
         config.healthkit.path = workspace_path / "components" / "agent-healthkit"
 
+    def _component_icon(installed):
+        if installed is True:   return "✅"
+        if installed is None:   return "🔒"   # Pro / optional
+        return "❌"
+
     # Install or check components
     if install and platform != "openclaw":
         # OpenClaw: components are already installed — no cloning needed
         results = install_all_components(config, console)
         for component, status in results.items():
-            icon = "✅" if status["installed"] else "❌"
+            icon = _component_icon(status["installed"])
             console.print(f"  {icon} {component}: {status['message']}")
     else:
         results = install_components(config)
         for component, status in results.items():
-            icon = "✅" if status["installed"] else "❌"
+            icon = _component_icon(status["installed"])
             console.print(f"  {icon} {component}: {status['message']}")
     
     save_config(config)

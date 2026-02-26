@@ -20,4 +20,8 @@ def get_pipeline_status(workspace: Path) -> dict:
     check = check_pipeline(workspace)
     if check["installed"]:
         return {"healthy": True, "status": "Ready", "details": "CodeBot + OpusBot available"}
-    return {"healthy": False, "status": "Not installed", "details": ""}
+    return {
+        "healthy": None,   # None = not an error, just not available
+        "status": "Pro feature",
+        "details": "github.com/sponsors/Jakebot-ops",
+    }
