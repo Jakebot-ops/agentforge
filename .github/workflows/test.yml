@@ -1,0 +1,77 @@
+name: Test AgentForge Install
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  test-ubuntu:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install AgentForge
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -e ".[dev]"
+      
+      - name: Test CLI --help
+        run: |
+          source venv/bin/activate
+          agentforge --help
+      
+      - name: Test CLI --version
+        run: |
+          source venv/bin/activate
+          agentforge --version
+      
+      - name: Test init (standalone)
+        run: |
+          source venv/bin/activate
+          agentforge init --platform standalone
+      
+      - name: Test doctor
+        run: |
+          source venv/bin/activate
+          agentforge doctor
+      
+      - name: Test status
+        run: |
+          source venv/bin/activate
+          agentforge status
+      
+      - name: Run pytest
+        run: |
+          source venv/bin/activate
+          pytest tests/ -v
+
+  test-installer-script:
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test install script
+        run: |
+          # Simulate curl | bash install
+          chmod +x install.sh
+          ./install.sh
+          
+      - name: Verify installation
+        run: |
+          source ~/.agentforge/venv/bin/activate
+          agentforge --version
+          agentforge doctor
