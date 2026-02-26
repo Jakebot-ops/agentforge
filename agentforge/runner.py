@@ -100,4 +100,9 @@ def get_status(config: AgentForgeConfig) -> dict:
     else:
         status["HealthKit"] = {"healthy": False, "status": "Not installed", "details": ""}
     
+    # Pipeline
+    from .components.pipeline import get_pipeline_status
+    pipeline_status = get_pipeline_status(config.workspace)
+    status["Pipeline"] = pipeline_status
+    
     return status

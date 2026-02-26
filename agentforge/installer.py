@@ -88,6 +88,14 @@ def install_components(config: AgentForgeConfig) -> dict:
         else:
             results["dashboard"] = {"installed": False, "message": "Not found."}
     
+    # Check dev pipeline (part of main repo)
+    from .components.pipeline import check_pipeline
+    pipeline_check = check_pipeline(config.workspace)
+    if pipeline_check["installed"]:
+        results["pipeline"] = {"installed": True, "message": f"Found at {pipeline_check['path']}"}
+    else:
+        results["pipeline"] = {"installed": False, "message": "Not found in repo."}
+    
     return results
 
 
@@ -136,6 +144,15 @@ def check_components(config: AgentForgeConfig) -> dict:
         "ok": py_ok,
         "message": f"{py_version.major}.{py_version.minor}.{py_version.micro}",
         "fix": "Requires Python 3.10+"
+    }
+    
+    # Pipeline
+    from .components.pipeline import check_pipeline
+    pipeline_check = check_pipeline(config.workspace)
+    checks["Pipeline"] = {
+        "ok": pipeline_check["installed"],
+        "message": "CodeBot + OpusBot ready" if pipeline_check["installed"] else "Not found",
+        "fix": "Ensure pipeline/ directory exists in workspace"
     }
     
     return checks
