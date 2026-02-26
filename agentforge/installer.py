@@ -13,28 +13,41 @@ def install_all_components(config: AgentForgeConfig, console) -> dict:
     components_dir.mkdir(parents=True, exist_ok=True)
     
     REPOS = {
-        "persistent-memory": "https://github.com/Jakebot-ops/persistent-memory.git",
-        "agent-healthkit": "https://github.com/Jakebot-ops/agent-healthkit.git",
-        "jakebot-dashboard": "https://github.com/Jakebot-ops/jakebot-dashboard.git",
+        "persistent-memory": ("https://github.com/Jakebot-ops/persistent-memory.git", False),
+        "agent-healthkit": ("https://github.com/Jakebot-ops/agent-healthkit.git", False),
+        "jakebot-dashboard": ("https://github.com/Jakebot-ops/jakebot-dashboard.git", False),
+        "pipeline": ("https://github.com/Jakebot-ops/agentforge-pipeline.git", True),  # Pro feature
     }
     
-    for name, url in REPOS.items():
+    for name, (url, is_pro) in REPOS.items():
         target = components_dir / name
-        console.print(f"  📦 Installing {name}...")
+        
+        if is_pro:
+            console.print(f"  🔐 [cyan]{name}[/] (Pro feature)...")
+        else:
+            console.print(f"  📦 Installing {name}...")
         
         if target.exists():
             # Update existing
             result = subprocess.run(["git", "-C", str(target), "pull"], 
                                   capture_output=True, text=True)
-            results[name] = {"installed": True, "message": "Updated"}
+            results[name] = {"installed": True, "message": "Updated", "pro": is_pro}
         else:
             # Clone new
             result = subprocess.run(["git", "clone", url, str(target)],
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
-                results[name] = {"installed": True, "message": "Cloned"}
+                results[name] = {"installed": True, "message": "Cloned", "pro": is_pro}
+            elif is_pro and ("Authentication failed" in result.stderr or "could not read" in result.stderr.lower()):
+                # Pro feature - user doesn't have access
+                results[name] = {
+                    "installed": False, 
+                    "message": "🔒 Pro feature — sponsor at github.com/sponsors/Jakebot-ops",
+                    "pro": True,
+                    "locked": True
+                }
             else:
-                results[name] = {"installed": False, "message": result.stderr[:100]}
+                results[name] = {"installed": False, "message": result.stderr[:100], "pro": is_pro}
         
         # Set up Python venv for each component if requirements.txt exists
         req_file = target / "requirements.txt"
