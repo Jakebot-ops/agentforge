@@ -35,7 +35,7 @@ class DashboardConfig(BaseModel):
 
 class AgentForgeConfig(BaseModel):
     version: str = "1"
-    platform: str = "openclaw"  # openclaw | langchain | standalone
+    platform: str = "openclaw"  # openclaw | langchain | autogen | standalone
     workspace: Path = Path.home() / ".openclaw/workspace"
     memory: MemoryConfig = MemoryConfig()
     healthkit: HealthkitConfig = HealthkitConfig()

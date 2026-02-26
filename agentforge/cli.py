@@ -4,11 +4,19 @@ import click
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
+from rich.prompt import Prompt
 from .config import load_config, save_config, AgentForgeConfig, DEFAULT_CONFIG_PATH
 from .installer import install_components, check_components, install_all_components
 from .runner import start_services, stop_services, get_status
 
 console = Console()
+
+PLATFORMS = {
+    "1": ("openclaw", "OpenClaw — Full-featured agent runtime"),
+    "2": ("langchain", "LangChain — Popular Python agent framework"),
+    "3": ("autogen", "AutoGen — Microsoft's multi-agent framework"),
+    "4": ("standalone", "Standalone — Raw Python, no framework"),
+}
 
 
 @click.group()
@@ -19,12 +27,23 @@ def cli():
 
 
 @cli.command()
-@click.option("--platform", type=click.Choice(["openclaw", "langchain", "standalone"]), default="openclaw")
+@click.option("--platform", type=click.Choice(["openclaw", "langchain", "autogen", "standalone"]), default=None)
 @click.option("--workspace", type=click.Path(), default=None)
 @click.option("--install/--no-install", default=True, help="Install all components")
 def init(platform: str, workspace: str, install: bool):
     """Initialize AgentForge in the current environment."""
     console.print("[bold blue]⚒️  Initializing AgentForge...[/]")
+    
+    # Interactive platform selection if not provided
+    if platform is None:
+        console.print("\n[bold]Select your agent platform:[/]\n")
+        for key, (name, desc) in PLATFORMS.items():
+            console.print(f"  [cyan]{key}[/]) {desc}")
+        console.print()
+        
+        choice = Prompt.ask("Enter choice", choices=["1", "2", "3", "4"], default="4")
+        platform = PLATFORMS[choice][0]
+        console.print(f"\n  Selected: [green]{platform}[/]\n")
     
     config = AgentForgeConfig(platform=platform)
     workspace_path = Path(workspace) if workspace else Path.home() / ".agentforge"
