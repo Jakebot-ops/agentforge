@@ -12,10 +12,13 @@ agentforge.egg-info/entry_points.txt
 agentforge.egg-info/requires.txt
 agentforge.egg-info/top_level.txt
 agentforge/adapters/__init__.py
+agentforge/adapters/autogen.py
 agentforge/adapters/base.py
+agentforge/adapters/langchain.py
 agentforge/adapters/openclaw.py
 agentforge/components/__init__.py
 agentforge/components/dashboard.py
 agentforge/components/healthkit.py
 agentforge/components/memory.py
+agentforge/components/pipeline.py
 tests/test_cli.py

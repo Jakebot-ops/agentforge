@@ -41,7 +41,7 @@ jobs:
       - name: Test init (standalone)
         run: |
           source venv/bin/activate
-          agentforge init --platform standalone
+          agentforge init --platform standalone --no-install
       
       - name: Test doctor
         run: |
