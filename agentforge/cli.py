@@ -29,7 +29,7 @@ PLATFORMS = {
 
 
 @click.group()
-@click.version_option(package_name="agentforge")
+@click.version_option(package_name="agentsforge")
 def cli():
     """AgentForge — Complete AI agent infrastructure in one command."""
     pass
