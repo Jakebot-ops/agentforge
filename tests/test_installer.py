@@ -102,6 +102,30 @@ class TestInstallComponents:
         assert results["agent-healthkit"]["installed"] is True
 
 
+class TestInstallComponentsPipelineDetection:
+    def test_detects_installed_pipeline(self, config, tmp_path):
+        """Should detect pipeline when orchestrate.py exists at correct path."""
+        pipeline_dir = tmp_path / "workspace" / "components" / "pipeline" / "pipeline"
+        pipeline_dir.mkdir(parents=True)
+        (pipeline_dir / "orchestrate.py").write_text("# orchestrator")
+
+        results = install_components(config)
+        assert results["pipeline"]["installed"] is True
+
+    def test_reports_missing_pipeline_as_pro(self, config):
+        """Missing pipeline should not be an error — it's a Pro feature."""
+        results = install_components(config)
+        assert results["pipeline"]["installed"] is None
+
+    def test_detects_dashboard_in_components(self, config, tmp_path):
+        """Dashboard should be found at workspace/components/jakebot-dashboard."""
+        dashboard_dir = tmp_path / "workspace" / "components" / "jakebot-dashboard"
+        dashboard_dir.mkdir(parents=True)
+
+        results = install_components(config)
+        assert results["dashboard"]["installed"] is True
+
+
 class TestCheckComponents:
     def test_python_version_check(self, config):
         """Should pass Python version check (we're running 3.10+)."""
@@ -112,3 +136,11 @@ class TestCheckComponents:
         """Pipeline check should always be ok (Pro is optional)."""
         checks = check_components(config)
         assert checks["Pipeline"]["ok"] is True
+
+    def test_dashboard_check_uses_components_path(self, config, tmp_path):
+        """Dashboard check should look in workspace/components/."""
+        dashboard_dir = tmp_path / "workspace" / "components" / "jakebot-dashboard"
+        dashboard_dir.mkdir(parents=True)
+
+        checks = check_components(config)
+        assert checks["Dashboard"]["ok"] is True
