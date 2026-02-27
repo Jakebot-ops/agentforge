@@ -254,7 +254,7 @@ detect_or_install_platform() {
         export npm_config_prefix="$NPM_PREFIX"
         export PATH="$NPM_PREFIX/bin:$PATH"
 
-        npm install -g openclaw
+        npm install -g openclaw@latest
         OPENCLAW_CMD="$NPM_PREFIX/bin/openclaw"
         # npm v10 sometimes skips bin symlink creation if bin/ dir pre-exists.
         # If the symlink is missing but the package landed correctly, create it manually.
