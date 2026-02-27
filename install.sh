@@ -95,13 +95,12 @@ install_prerequisites() {
             PYTHON_CMD="python3.12"
         fi
 
-        # venv module
-        if ! "$PYTHON_CMD" -c "import venv" &>/dev/null; then
-            info "Installing python venv..."
-            VER=$("$PYTHON_CMD" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-            sudo apt-get install -y -qq "python${VER}-venv" 2>/dev/null || \
-                sudo apt-get install -y -qq python3-venv
-        fi
+        # Always install python3.X-venv explicitly.
+        # On Ubuntu 24.04, 'import venv' succeeds but ensurepip is still
+        # unavailable without this package, causing venv creation to fail.
+        VER=$("$PYTHON_CMD" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        sudo apt-get install -y -qq "python${VER}-venv" 2>/dev/null || \
+            sudo apt-get install -y -qq python3-venv
 
         # pip
         if ! "$PYTHON_CMD" -m pip --version &>/dev/null 2>&1; then
