@@ -64,12 +64,12 @@ def init(platform: str, workspace: str, install: bool):
         else:
             console.print("  [yellow]⚠ OpenClaw not detected — using standalone paths[/]")
             config.workspace = Path(workspace) if workspace else Path.home() / ".agentforge"
-            config.memory.path = config.workspace / "components" / "persistent-memory"
+            config.memory.path = config.workspace / "components" / "agent-memory-core"
             config.healthkit.path = config.workspace / "components" / "agent-healthkit"
     else:
         workspace_path = Path(workspace) if workspace else Path.home() / ".agentforge"
         config.workspace = workspace_path
-        config.memory.path = workspace_path / "components" / "persistent-memory"
+        config.memory.path = workspace_path / "components" / "agent-memory-core"
         config.healthkit.path = workspace_path / "components" / "agent-healthkit"
 
     def _component_icon(installed):

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 class MemoryComponent:
     """Manages the persistent memory system (ChromaDB + NetworkX)."""
     
-    name: str = "persistent-memory"
+    name: str = "agent-memory-core"
     
     def __init__(self, path: Path):
         self.path = path

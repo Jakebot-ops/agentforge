@@ -13,10 +13,10 @@ def install_all_components(config: AgentForgeConfig, console) -> dict:
     components_dir.mkdir(parents=True, exist_ok=True)
     
     REPOS = {
-        "persistent-memory": ("https://github.com/Jakebot-ops/persistent-memory.git", False),
-        "agent-healthkit": ("https://github.com/Jakebot-ops/agent-healthkit.git", False),
-        "jakebot-dashboard": ("https://github.com/Jakebot-ops/jakebot-dashboard.git", False),
-        "pipeline": ("https://github.com/Jakebot-ops/agentforge-pipeline.git", True),  # Pro feature
+        "agent-memory-core": ("https://github.com/JakebotLabs/agent-memory-core.git", False),
+        "agent-healthkit": ("https://github.com/JakebotLabs/agent-healthkit.git", False),
+        "jakebot-dashboard": ("https://github.com/JakebotLabs/jakebot-dashboard.git", False),
+        "pipeline": ("https://github.com/JakebotLabs/agentforge-pipeline.git", True),  # Pro feature
     }
     
     for name, (url, is_pro) in REPOS.items():
@@ -42,7 +42,7 @@ def install_all_components(config: AgentForgeConfig, console) -> dict:
                 # Pro feature - user doesn't have access
                 results[name] = {
                     "installed": False, 
-                    "message": "🔒 Pro feature — sponsor at github.com/sponsors/Jakebot-ops",
+                    "message": "🔒 Pro feature — sponsor at github.com/sponsors/JakebotLabs",
                     "pro": True,
                     "locked": True
                 }
@@ -71,9 +71,9 @@ def install_components(config: AgentForgeConfig) -> dict:
     # Check memory system
     memory_path = config.memory.path
     if memory_path.exists() and (memory_path / "chroma_db").exists():
-        results["persistent-memory"] = {"installed": True, "message": f"Found at {memory_path}"}
+        results["agent-memory-core"] = {"installed": True, "message": f"Found at {memory_path}"}
     else:
-        results["persistent-memory"] = {"installed": False, "message": "Not found. Run setup."}
+        results["agent-memory-core"] = {"installed": False, "message": "Not found. Run setup."}
     
     # Check healthkit
     healthkit_path = config.healthkit.path
@@ -109,7 +109,7 @@ def install_components(config: AgentForgeConfig) -> dict:
     else:
         results["pipeline"] = {
             "installed": None,  # Not an error — Pro feature
-            "message": "Pro feature — github.com/sponsors/Jakebot-ops",
+            "message": "Pro feature — github.com/sponsors/JakebotLabs",
         }
     
     return results

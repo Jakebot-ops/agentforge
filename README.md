@@ -1,7 +1,7 @@
 # AgentForge
 
-[![CI](https://github.com/Jakebot-ops/agentforge/actions/workflows/test.yml/badge.svg)](https://github.com/Jakebot-ops/agentforge/actions)
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/Jakebot-ops?style=flat&logo=github&label=Sponsor)](https://github.com/sponsors/Jakebot-ops)
+[![CI](https://github.com/JakebotLabs/agentforge/actions/workflows/test.yml/badge.svg)](https://github.com/JakebotLabs/agentforge/actions)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/JakebotLabs?style=flat&logo=github&label=Sponsor)](https://github.com/sponsors/JakebotLabs)
 
 **Complete AI agent infrastructure in one command.**
 
@@ -19,7 +19,7 @@ curl -fsSL https://agentsforge.dev/install.sh | bash
 | 🩺 **Health** | Auto-monitoring + self-healing + soul drift detection | ✅ Free |
 | 📊 **Dashboard** | Web UI for memory & health management | ✅ Free |
 | 🔧 **NPM Package** | TypeScript client: `@agentsforge/healthkit` | ✅ Free |
-| ⚙️ **Dev Pipeline** | CodeBot + OpusBot autonomous coding | 🔐 [Pro](https://github.com/sponsors/Jakebot-ops) |
+| ⚙️ **Dev Pipeline** | CodeBot + OpusBot autonomous coding | 🔐 [Pro](https://github.com/sponsors/JakebotLabs) |
 
 ## Quick Start
 
@@ -32,7 +32,7 @@ curl -fsSL https://agentsforge.dev/install.sh | bash
 ### Manual Install
 
 ```bash
-git clone https://github.com/Jakebot-ops/agentforge
+git clone https://github.com/JakebotLabs/agentforge
 cd agentforge
 python3 -m venv venv
 source venv/bin/activate
@@ -79,7 +79,7 @@ dashboard:
 - Web dashboard at localhost:7842
 - Works with any agent framework
 
-**Pro ($25/mo via [GitHub Sponsors](https://github.com/sponsors/Jakebot-ops)):**
+**Pro ($25/mo via [GitHub Sponsors](https://github.com/sponsors/JakebotLabs)):**
 - Everything in Free
 - Dev Pipeline (CodeBot + OpusBot)
 - Autonomous code writing and review
@@ -134,8 +134,8 @@ AgentForge works with any Python-based agent:
 
 MIT — Free to use, modify, and distribute.
 
-The Dev Pipeline is available to [GitHub Sponsors](https://github.com/sponsors/Jakebot-ops) ($25/mo+).
+The Dev Pipeline is available to [GitHub Sponsors](https://github.com/sponsors/JakebotLabs) ($25/mo+).
 
 ---
 
-Built by [Jakebot Labs](https://jakebotlabs.com) · [Sponsor](https://github.com/sponsors/Jakebot-ops) · [Website](https://agentsforge.dev)
+Built by [Jakebot Labs](https://jakebotlabs.com) · [Sponsor](https://github.com/sponsors/JakebotLabs) · [Website](https://agentsforge.dev)
