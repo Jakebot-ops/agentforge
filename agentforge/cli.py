@@ -185,5 +185,47 @@ def doctor():
         console.print("\n[yellow]Some issues found. Run suggested fixes above.[/]")
 
 
+@cli.command()
+@click.argument("bot", type=click.Choice(["codebot", "opusbot"]))
+@click.argument("task")
+def pipeline(bot: str, task: str):
+    """Run a task through the Dev Pipeline (Pro feature).
+
+    \b
+    Examples:
+      agentforge pipeline codebot "Write a REST API for user auth"
+      agentforge pipeline opusbot "Review src/auth.py for security issues"
+    """
+    import os
+    import subprocess as sp
+
+    config = load_config()
+
+    from .components.pipeline import check_pipeline, get_pipeline_root
+    check = check_pipeline(config.workspace)
+
+    if not check["installed"]:
+        console.print("[yellow]Pipeline not installed.[/]")
+        console.print("  Install with: [bold]agentforge install[/]")
+        console.print("  Or sponsor at: [cyan]github.com/sponsors/JakebotLabs[/]")
+        return
+
+    # Use the pipeline's own venv Python (which has anthropic installed).
+    # Falls back to the current interpreter if no venv exists yet.
+    from .platform import get_venv_python
+    pipeline_root = get_pipeline_root(config.workspace)
+    pipeline_python = get_venv_python(pipeline_root)
+    if not pipeline_python.exists():
+        pipeline_python = Path(sys.executable)
+
+    cmd = [str(pipeline_python), "-m", "pipeline", bot, task]
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(pipeline_root) + os.pathsep + env.get("PYTHONPATH", "")
+
+    result = sp.run(cmd, env=env)
+    sys.exit(result.returncode)
+
+
 if __name__ == "__main__":
     cli()

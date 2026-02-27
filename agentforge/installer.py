@@ -96,7 +96,7 @@ def install_components(config: AgentForgeConfig) -> dict:
         results["dashboard"] = {"installed": True, "message": "Installed via pip"}
     else:
         # Check local install
-        local_dashboard = config.workspace / "jakebot-dashboard"
+        local_dashboard = Path(config.workspace) / "components" / "jakebot-dashboard"
         if local_dashboard.exists():
             results["dashboard"] = {"installed": True, "message": f"Found at {local_dashboard}"}
         else:
@@ -147,7 +147,7 @@ def check_components(config: AgentForgeConfig) -> dict:
     }
     
     # Dashboard
-    dashboard_path = config.workspace / "jakebot-dashboard"
+    dashboard_path = Path(config.workspace) / "components" / "jakebot-dashboard"
     checks["Dashboard"] = {
         "ok": dashboard_path.exists(),
         "message": "Found" if dashboard_path.exists() else "Not found",
