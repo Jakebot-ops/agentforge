@@ -119,7 +119,92 @@ def install_components(config: AgentForgeConfig) -> dict:
 
 def check_components(config: AgentForgeConfig) -> dict:
     """Run diagnostic checks on all components."""
+    import shutil
+    import urllib.request
+    import urllib.error
+    
     checks = {}
+    
+    # Python version (check first - most important)
+    py_version = sys.version_info
+    py_ok = py_version >= (3, 10)
+    checks["Python version"] = {
+        "ok": py_ok,
+        "message": f"{py_version.major}.{py_version.minor}.{py_version.micro}",
+        "fix": "Requires Python 3.10+ — https://python.org/downloads/"
+    }
+    
+    # git available
+    git_path = shutil.which("git")
+    if git_path:
+        try:
+            result = subprocess.run(["git", "--version"], capture_output=True, text=True, timeout=5)
+            git_version = result.stdout.strip() if result.returncode == 0 else "unknown"
+            checks["git"] = {"ok": True, "message": git_version, "fix": None}
+        except Exception:
+            checks["git"] = {"ok": False, "message": "Error running git", "fix": "Reinstall git"}
+    else:
+        checks["git"] = {
+            "ok": False,
+            "message": "Not found in PATH",
+            "fix": "Install git: apt-get install git (Linux) / brew install git (macOS)"
+        }
+    
+    # npm available (optional, for @agentsforge/healthkit users)
+    npm_path = shutil.which("npm")
+    if npm_path:
+        try:
+            result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=5)
+            npm_version = result.stdout.strip() if result.returncode == 0 else "unknown"
+            checks["npm"] = {"ok": True, "message": f"v{npm_version}", "fix": None}
+        except Exception:
+            checks["npm"] = {"ok": True, "message": "Found but version check failed", "fix": None}
+    else:
+        checks["npm"] = {
+            "ok": True,  # Optional - not a failure
+            "message": "Not found (optional — for @agentsforge/healthkit)",
+            "fix": "Install Node.js: https://nodejs.org/"
+        }
+    
+    # agentsforge.dev reachable
+    try:
+        req = urllib.request.Request(
+            "https://agentsforge.dev",
+            headers={"User-Agent": "AgentForge-Doctor/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            checks["agentsforge.dev"] = {
+                "ok": resp.status == 200,
+                "message": "Reachable" if resp.status == 200 else f"HTTP {resp.status}",
+                "fix": None
+            }
+    except urllib.error.URLError as e:
+        checks["agentsforge.dev"] = {
+            "ok": False,
+            "message": f"Unreachable: {e.reason}",
+            "fix": "Check internet connection or firewall"
+        }
+    except Exception as e:
+        checks["agentsforge.dev"] = {
+            "ok": False,
+            "message": f"Error: {str(e)[:50]}",
+            "fix": "Check internet connection"
+        }
+    
+    # Agent Mailbox (optional but recommended for multi-agent)
+    mailbox_path = Path.home() / ".openclaw" / "mailbox"
+    if mailbox_path.exists() and (mailbox_path / ".git").exists():
+        checks["Agent Mailbox"] = {
+            "ok": True,
+            "message": f"Found at {mailbox_path}",
+            "fix": None
+        }
+    else:
+        checks["Agent Mailbox"] = {
+            "ok": True,  # Optional - not a failure
+            "message": "Not installed (optional — for multi-agent coordination)",
+            "fix": "git clone https://github.com/JakebotLabs/agent-mailbox.git ~/.openclaw/mailbox"
+        }
     
     # Config file exists
     from .config import DEFAULT_CONFIG_PATH
@@ -153,15 +238,6 @@ def check_components(config: AgentForgeConfig) -> dict:
         "ok": dashboard_path.exists(),
         "message": "Found" if dashboard_path.exists() else "Not found",
         "fix": "Clone jakebot-dashboard repo"
-    }
-    
-    # Python version
-    py_version = sys.version_info
-    py_ok = py_version >= (3, 10)
-    checks["Python version"] = {
-        "ok": py_ok,
-        "message": f"{py_version.major}.{py_version.minor}.{py_version.micro}",
-        "fix": "Requires Python 3.10+"
     }
     
     # Pipeline
