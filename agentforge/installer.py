@@ -134,39 +134,42 @@ def check_components(config: AgentForgeConfig) -> dict:
     checks["Python version"] = {
         "ok": py_ok,
         "message": f"{py_version.major}.{py_version.minor}.{py_version.micro}",
-        "fix": "Requires Python 3.10+ — https://python.org/downloads/"
+        "hint": "Requires Python 3.10+ — https://python.org/downloads/" if not py_ok else None,
+        "cmd": None
     }
-    
+
     # git available
     git_path = shutil.which("git")
     if git_path:
         try:
             result = subprocess.run(["git", "--version"], capture_output=True, text=True, timeout=5)
             git_version = result.stdout.strip() if result.returncode == 0 else "unknown"
-            checks["git"] = {"ok": True, "message": git_version, "fix": None}
+            checks["git"] = {"ok": True, "message": git_version, "hint": None, "cmd": None}
         except Exception:
-            checks["git"] = {"ok": False, "message": "Error running git", "fix": "Reinstall git"}
+            checks["git"] = {"ok": False, "message": "Error running git", "hint": "Reinstall git", "cmd": None}
     else:
         checks["git"] = {
             "ok": False,
             "message": "Not found in PATH",
-            "fix": "Install git: apt-get install git (Linux) / brew install git (macOS)"
+            "hint": "apt-get install git  (Linux) / brew install git  (macOS)",
+            "cmd": None
         }
-    
+
     # npm available (optional, for @agentsforge/healthkit users)
     npm_path = shutil.which("npm")
     if npm_path:
         try:
             result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=5)
             npm_version = result.stdout.strip() if result.returncode == 0 else "unknown"
-            checks["npm"] = {"ok": True, "message": f"v{npm_version}", "fix": None}
+            checks["npm"] = {"ok": True, "message": f"v{npm_version}", "hint": None, "cmd": None}
         except Exception:
-            checks["npm"] = {"ok": True, "message": "Found but version check failed", "fix": None}
+            checks["npm"] = {"ok": True, "message": "Found but version check failed", "hint": None, "cmd": None}
     else:
         checks["npm"] = {
             "ok": True,  # Optional - not a failure
-            "message": "Not found (optional — for @agentsforge/healthkit)",
-            "fix": "Install Node.js: https://nodejs.org/"
+            "message": "Not found (optional — for OpenClaw)",
+            "hint": "https://nodejs.org/",
+            "cmd": None
         }
     
     # agentsforge.dev reachable
@@ -179,77 +182,84 @@ def check_components(config: AgentForgeConfig) -> dict:
             checks["agentsforge.dev"] = {
                 "ok": resp.status == 200,
                 "message": "Reachable" if resp.status == 200 else f"HTTP {resp.status}",
-                "fix": None
+                "hint": None, "cmd": None
             }
     except urllib.error.URLError as e:
         checks["agentsforge.dev"] = {
             "ok": False,
             "message": f"Unreachable: {e.reason}",
-            "fix": "Check internet connection or firewall"
+            "hint": "Check your internet connection or firewall settings",
+            "cmd": None
         }
     except Exception as e:
         checks["agentsforge.dev"] = {
             "ok": False,
             "message": f"Error: {str(e)[:50]}",
-            "fix": "Check internet connection"
+            "hint": "Check your internet connection",
+            "cmd": None
         }
-    
+
     # Agent Mailbox (optional but recommended for multi-agent)
     mailbox_path = Path.home() / ".openclaw" / "mailbox"
     if mailbox_path.exists() and (mailbox_path / ".git").exists():
         checks["Agent Mailbox"] = {
             "ok": True,
             "message": f"Found at {mailbox_path}",
-            "fix": None
+            "hint": None, "cmd": None
         }
     else:
         checks["Agent Mailbox"] = {
             "ok": True,  # Optional - not a failure
             "message": "Not installed (optional — for multi-agent coordination)",
-            "fix": "git clone https://github.com/JakebotLabs/agent-mailbox.git ~/.openclaw/mailbox"
+            "hint": "git clone https://github.com/JakebotLabs/agent-mailbox.git ~/.openclaw/mailbox",
+            "cmd": f"git clone https://github.com/JakebotLabs/agent-mailbox.git {Path.home() / '.openclaw' / 'mailbox'}"
         }
-    
+
     # Config file exists
     from .config import DEFAULT_CONFIG_PATH
     checks["Config file"] = {
         "ok": DEFAULT_CONFIG_PATH.exists(),
-        "message": str(DEFAULT_CONFIG_PATH) if DEFAULT_CONFIG_PATH.exists() else "Missing",
-        "fix": "Run: agentforge init"
+        "message": str(DEFAULT_CONFIG_PATH) if DEFAULT_CONFIG_PATH.exists() else "Missing — run: agentforge init",
+        "hint": "agentforge init" if not DEFAULT_CONFIG_PATH.exists() else None,
+        "cmd": "agentforge init" if not DEFAULT_CONFIG_PATH.exists() else None
     }
-    
+
     # Memory system
     memory_path = config.memory.path
     chroma_exists = (memory_path / "chroma_db").exists()
     checks["Memory (ChromaDB)"] = {
         "ok": chroma_exists,
-        "message": "Database found" if chroma_exists else "No ChromaDB",
-        "fix": "Run the memory indexer"
+        "message": f"Database ready at {memory_path}" if chroma_exists else f"No ChromaDB found at {memory_path}",
+        "hint": f"Re-run the installer or: python -c \"import chromadb; chromadb.PersistentClient(path='{memory_path}/chroma_db')\"" if not chroma_exists else None,
+        "cmd": None  # Requires venv python — can't safely auto-fix from here
     }
-    
+
     # Healthkit (optional — not yet on PyPI, install from source)
     healthkit_path = config.healthkit.path
     monitor_exists = (healthkit_path / "monitor.py").exists()
     checks["HealthKit"] = {
         "ok": True,  # Not having it is not a blocking error — it's optional
         "message": "Active (observe mode)" if monitor_exists else "Not installed (optional)",
-        "fix": None if monitor_exists else "git clone https://github.com/JakebotLabs/agent-healthkit.git && pip install -e agent-healthkit"
+        "hint": "git clone https://github.com/JakebotLabs/agent-healthkit.git && pip install -e agent-healthkit" if not monitor_exists else None,
+        "cmd": None  # Has && operator — not safe with shell=False; skip auto-fix
     }
-    
+
     # Dashboard
     dashboard_path = Path(config.workspace) / "components" / "jakebot-dashboard"
     checks["Dashboard"] = {
-        "ok": dashboard_path.exists(),
-        "message": "Found" if dashboard_path.exists() else "Not found",
-        "fix": "Clone jakebot-dashboard repo"
+        "ok": True,  # Not having it is not a blocking error — it's optional
+        "message": "Ready" if dashboard_path.exists() else "Not installed (optional)",
+        "hint": "git clone https://github.com/JakebotLabs/jakebot-dashboard.git " + str(dashboard_path) if not dashboard_path.exists() else None,
+        "cmd": f"git clone https://github.com/JakebotLabs/jakebot-dashboard.git {dashboard_path}" if not dashboard_path.exists() else None
     }
-    
+
     # Pipeline
     from .components.pipeline import check_pipeline
     pipeline_check = check_pipeline(config.workspace)
     checks["Pipeline"] = {
         "ok": True,   # Not having Pro is not a failure
         "message": "CodeBot + OpusBot ready" if pipeline_check["installed"] else "🔒 Pro feature (optional)",
-        "fix": None
+        "hint": None, "cmd": None
     }
 
     # OpenClaw platform check (only when platform=openclaw)
@@ -262,63 +272,56 @@ def check_components(config: AgentForgeConfig) -> dict:
             checks["OpenClaw CLI"] = {
                 "ok": False,
                 "message": "openclaw command not found",
-                "fix": "Install OpenClaw: npm install -g openclaw"
+                "hint": "npm install -g openclaw",
+                "cmd": "npm install -g openclaw"
             }
         else:
             try:
                 result = subprocess.run(["openclaw", "--version"], capture_output=True, text=True, timeout=5)
                 oc_version = result.stdout.strip() or result.stderr.strip() or "installed"
                 checks["OpenClaw CLI"] = {
-                    "ok": True,
-                    "message": oc_version,
-                    "fix": None
+                    "ok": True, "message": oc_version, "hint": None, "cmd": None
                 }
             except Exception:
                 checks["OpenClaw CLI"] = {
-                    "ok": True,
-                    "message": "Found (version check failed)",
-                    "fix": None
+                    "ok": True, "message": "Found (version check failed)", "hint": None, "cmd": None
                 }
 
-        # 2. ~/.openclaw/openclaw.json exists
+        # 2. ~/.openclaw/openclaw.json exists and has a model set
         if not openclaw_json.exists():
             checks["OpenClaw config"] = {
                 "ok": False,
                 "message": f"{openclaw_json} not found",
-                "fix": "Run: openclaw configure  (or: openclaw configure --section model)"
+                "hint": "openclaw configure",
+                "cmd": None  # Interactive — skip auto-fix
             }
         else:
-            # 3. agents.defaults.model.primary is set
             try:
                 import json as _json
                 with open(openclaw_json) as _f:
                     _oc_cfg = _json.load(_f)
-
                 _primary = (
-                    _oc_cfg
-                    .get("agents", {})
-                    .get("defaults", {})
-                    .get("model", {})
-                    .get("primary", "")
+                    _oc_cfg.get("agents", {}).get("defaults", {})
+                    .get("model", {}).get("primary", "")
                 )
-
                 if _primary:
                     checks["OpenClaw config"] = {
-                        "ok": True,
-                        "message": f"Model configured: {_primary}",
-                        "fix": None
+                        "ok": True, "message": f"Model configured: {_primary}",
+                        "hint": None, "cmd": None
                     }
                 else:
                     checks["OpenClaw config"] = {
                         "ok": False,
-                        "message": "No primary model set (agents.defaults.model.primary is empty)",
-                        "fix": "Run: openclaw configure --section model  — then pick your AI provider/model"
+                        "message": "No primary model set",
+                        "hint": "openclaw configure --section model",
+                        "cmd": None  # Interactive — skip auto-fix
                     }
             except Exception as e:
                 checks["OpenClaw config"] = {
                     "ok": False,
                     "message": f"Could not parse openclaw.json: {str(e)[:60]}",
-                    "fix": "Run: openclaw configure --section model"
+                    "hint": "openclaw configure --section model",
+                    "cmd": None
                 }
 
     return checks

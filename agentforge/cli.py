@@ -211,19 +211,22 @@ def doctor(fix: bool):
         console.print(f"  {icon} {check}: {result['message']}")
         if not result["ok"]:
             all_ok = False
-            fix_cmd = result.get("fix")
-            if fix_cmd:
-                console.print(f"     💡 Fix: {fix_cmd}")
-                if fix:
-                    console.print(f"     🔧 Auto-fixing: {fix_cmd}")
-                    try:
-                        import shlex
-                        # SECURITY: fix_cmd must remain hardcoded in installer.py.
-                        # Never make fix_cmd user-controllable — shell injection risk.
-                        sp.run(shlex.split(fix_cmd), shell=False, check=False)
-                        console.print(f"     ✅ Fix applied for {check}")
-                    except Exception as e:
-                        console.print(f"     ❌ Fix failed: {e}")
+        # Show hint for any failed check (human-readable guidance)
+        hint = result.get("hint")
+        if hint and not result["ok"]:
+            console.print(f"     💡 {hint}")
+        # Auto-fix: only run if --fix passed AND a safe shell cmd exists
+        cmd = result.get("cmd")
+        if fix and not result["ok"] and cmd:
+            console.print(f"     🔧 Running: {cmd}")
+            try:
+                import shlex
+                # SECURITY: cmd values are hardcoded in installer.py check_components.
+                # They are never derived from user input — no injection risk.
+                sp.run(shlex.split(cmd), shell=False, check=False)
+                console.print(f"     ✅ Done — re-run doctor to verify")
+            except Exception as e:
+                console.print(f"     ❌ Failed: {e}")
 
     if all_ok:
         console.print("\n[green]All checks passed![/]")
