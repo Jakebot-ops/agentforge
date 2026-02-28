@@ -36,7 +36,7 @@ def cli():
 
 
 @cli.command()
-@click.option("--platform", type=click.Choice(["openclaw", "langchain", "autogen", "standalone"]), default=None)
+@click.option("--platform", type=click.Choice(["openclaw"]), default=None)  # langchain/standalone: future — not yet implemented
 @click.option("--workspace", type=click.Path(), default=None)
 @click.option("--install/--no-install", default=True, help="Install all components")
 def init(platform: str, workspace: str, install: bool):
@@ -197,26 +197,40 @@ def status():
 
 
 @cli.command()
-def doctor():
+@click.option('--fix', is_flag=True, help='Auto-run suggested fixes')
+def doctor(fix: bool):
     """Check AgentForge installation and diagnose issues."""
+    import subprocess as sp
+
     config = load_config()
     console.print("[bold blue]🩺 Running AgentForge diagnostics...[/]")
-    
+
     checks = check_components(config)
-    
+
     all_ok = True
     for check, result in checks.items():
         icon = "✅" if result["ok"] else "❌"
         console.print(f"  {icon} {check}: {result['message']}")
         if not result["ok"]:
             all_ok = False
-            if result.get("fix"):
-                console.print(f"     💡 Fix: {result['fix']}")
-    
+            fix_cmd = result.get("fix")
+            if fix_cmd:
+                console.print(f"     💡 Fix: {fix_cmd}")
+                if fix:
+                    console.print(f"     🔧 Auto-fixing: {fix_cmd}")
+                    try:
+                        sp.run(fix_cmd, shell=True, check=False)
+                        console.print(f"     ✅ Fix applied for {check}")
+                    except Exception as e:
+                        console.print(f"     ❌ Fix failed: {e}")
+
     if all_ok:
         console.print("\n[green]All checks passed![/]")
     else:
-        console.print("\n[yellow]Some issues found. Run suggested fixes above.[/]")
+        if fix:
+            console.print("\n[yellow]Fixes attempted. Re-run 'agentforge doctor' to verify.[/]")
+        else:
+            console.print("\n[yellow]Some issues found. Run suggested fixes above, or use --fix to auto-apply.[/]")
 
 
 @cli.command()

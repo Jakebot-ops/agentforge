@@ -260,6 +260,20 @@ detect_or_install_platform() {
         export npm_config_prefix="$NPM_PREFIX"
         export PATH="$NPM_PREFIX/bin:$PATH"
 
+        # Persist npm-global PATH across login shells
+        for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            if [[ -f "$RC" ]] && ! grep -q "npm-global" "$RC" 2>/dev/null; then
+                echo '' >> "$RC"
+                echo '# OpenClaw / npm global binaries' >> "$RC"
+                echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$RC"
+            fi
+        done
+        # System-wide coverage for SSH/login shells (sudo already available)
+        if [[ -d /etc/profile.d ]]; then
+            echo 'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"' | sudo tee /etc/profile.d/agentforge.sh > /dev/null
+            sudo chmod +x /etc/profile.d/agentforge.sh
+        fi
+
         npm install -g openclaw@latest
         OPENCLAW_CMD="$NPM_PREFIX/bin/openclaw"
         # npm v10 sometimes skips bin symlink creation if bin/ dir pre-exists.
@@ -294,6 +308,21 @@ detect_or_install_platform() {
             echo ""
             echo -e "  ${BOLD}openclaw configure${RESET}"
             echo ""
+            echo "  Open a new terminal, run: openclaw configure"
+            echo "  Then come back here and press Enter to continue..."
+            echo ""
+            if [[ -t 1 ]]; then
+                # Interactive: wait for user to complete configure
+                while [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; do
+                    read -rp "  Press Enter once 'openclaw configure' is complete... " _
+                    if [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; then
+                        warn "openclaw.json not found yet. Please run 'openclaw configure' first."
+                    fi
+                done
+                ok "OpenClaw configured"
+            else
+                warn "Run 'openclaw configure' before using AgentForge."
+            fi
         fi
     else
         warn "Skipping platform install. Add one later: agentforge init --platform openclaw"
@@ -339,6 +368,25 @@ fi
 "$AGENTFORGE_HOME/venv/bin/pip" install -q "$AGENTFORGE_HOME/repo"
 ok "Python environment ready"
 
+info "Installing memory layer (ChromaDB + NetworkX) — this takes 2-4 minutes on first run..."
+"$AGENTFORGE_HOME/venv/bin/pip" install -q chromadb sentence-transformers networkx 2>&1 | tail -1
+ok "Memory layer ready"
+
+info "Installing health monitoring (agent-healthkit)..."
+"$AGENTFORGE_HOME/venv/bin/pip" install -q agent-healthkit 2>/dev/null && ok "HealthKit ready" || warn "HealthKit install failed — install manually: pip install agent-healthkit"
+
+DASHBOARD_DIR="$AGENTFORGE_HOME/dashboard"
+if [[ ! -d "$DASHBOARD_DIR" ]]; then
+    info "Installing dashboard..."
+    if git clone -q https://github.com/JakebotLabs/jakebot-dashboard.git "$DASHBOARD_DIR" 2>/dev/null; then
+        if command -v npm &>/dev/null; then
+            npm install -q --prefix "$DASHBOARD_DIR" 2>/dev/null && ok "Dashboard ready" || warn "Dashboard deps failed — run: npm install in $DASHBOARD_DIR"
+        fi
+    else
+        warn "Dashboard unavailable (private repo or offline) — skipping"
+    fi
+fi
+
 # ── 5. Add to PATH (not alias) ────────────────────────────────
 info "Installing agentforge command..."
 LOCAL_BIN="$HOME/.local/bin"
@@ -352,13 +400,17 @@ chmod +x "$LOCAL_BIN/agentforge"
 
 # Ensure ~/.local/bin is in PATH (add to shell rc if missing)
 for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
-    [[ -f "$RC" ]] || continue
-    if ! grep -q 'HOME/.local/bin' "$RC" 2>/dev/null; then
+    if [[ -f "$RC" ]] && ! grep -q 'HOME/.local/bin' "$RC" 2>/dev/null; then
         echo '' >> "$RC"
         echo '# AgentForge / local binaries' >> "$RC"
         echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
     fi
 done
+# System-wide coverage (idempotent — tee overwrites if already written by npm-global block)
+if [[ -d /etc/profile.d ]]; then
+    echo 'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"' | sudo tee /etc/profile.d/agentforge.sh > /dev/null
+    sudo chmod +x /etc/profile.d/agentforge.sh
+fi
 
 ok "Command installed: $LOCAL_BIN/agentforge"
 
@@ -449,24 +501,37 @@ echo "  agentforge status    # see what's running"
 echo "  agentforge start     # launch all services"
 echo "  agentforge doctor    # diagnose issues"
 echo ""
-
-if [[ "$PLATFORM" == "openclaw" ]]; then
-    echo -e "${BOLD}Your OpenClaw bot:${RESET}"
-    echo "  openclaw chat        # test your bot interactively"
-    echo "  openclaw status      # check bot status"
-    echo ""
-fi
-
-if [[ "$INSTALL_MAILBOX" == "true" && -d "$MAILBOX_PATH" ]]; then
-    echo -e "${BOLD}Agent Mailbox:${RESET}"
-    echo "  cd $MAILBOX_PATH"
-    echo "  python mailbox.py --agent <your-id> onboard"
-    echo ""
-fi
-
 echo -e "${YELLOW}Note:${RESET} Open a new terminal (or run: export PATH=\"\$HOME/.local/bin:\$PATH\")"
 echo "      if 'agentforge' command isn't found yet."
 echo ""
 echo "Docs: https://agentsforge.dev"
 echo "════════════════════════════════════════"
+echo ""
+
+# Optional next steps (conditional — only shown when components are available)
+OPTIONAL_SHOWN=false
+
+if [[ "$PLATFORM" == "openclaw" ]]; then
+    echo -e "${BOLD}Optional next steps:${RESET}"
+    OPTIONAL_SHOWN=true
+    echo "  openclaw chat        # test your bot interactively"
+    echo "  openclaw status      # check openclaw status"
+fi
+
+if [[ "$INSTALL_MAILBOX" == "true" && -d "$MAILBOX_PATH" ]]; then
+    [[ "$OPTIONAL_SHOWN" == "false" ]] && echo -e "${BOLD}Optional next steps:${RESET}" && OPTIONAL_SHOWN=true
+    echo ""
+    echo -e "${BOLD}Agent Mailbox:${RESET}"
+    echo "  cd $MAILBOX_PATH"
+    echo "  python mailbox.py --agent <your-id> onboard"
+fi
+
+if [[ -d "$DASHBOARD_DIR" ]]; then
+    [[ "$OPTIONAL_SHOWN" == "false" ]] && echo -e "${BOLD}Optional next steps:${RESET}" && OPTIONAL_SHOWN=true
+    echo ""
+    echo -e "${BOLD}Dashboard:${RESET}"
+    echo "  agentforge start     # starts dashboard at http://localhost:7788"
+fi
+
+[[ "$OPTIONAL_SHOWN" == "true" ]] && echo ""
 echo ""
