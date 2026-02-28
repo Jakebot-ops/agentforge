@@ -20,11 +20,9 @@ if sys.platform == "win32":
 
 console = Console()
 
+# Only openclaw is implemented. langchain/autogen/standalone are future.
 PLATFORMS = {
-    "1": ("openclaw", "OpenClaw — Full-featured agent runtime"),
-    "2": ("langchain", "LangChain — Popular Python agent framework"),
-    "3": ("autogen", "AutoGen — Microsoft's multi-agent framework"),
-    "4": ("standalone", "Standalone — Raw Python, no framework"),
+    "1": ("openclaw", "OpenClaw — Full-featured agent runtime (recommended)"),
 }
 
 
@@ -50,7 +48,7 @@ def init(platform: str, workspace: str, install: bool):
             console.print(f"  [cyan]{key}[/]) {desc}")
         console.print()
         
-        choice = Prompt.ask("Enter choice", choices=["1", "2", "3", "4"], default="4")
+        choice = Prompt.ask("Enter choice", choices=["1"], default="1")
         platform = PLATFORMS[choice][0]
         console.print(f"\n  Selected: [green]{platform}[/]\n")
     
@@ -219,7 +217,10 @@ def doctor(fix: bool):
                 if fix:
                     console.print(f"     🔧 Auto-fixing: {fix_cmd}")
                     try:
-                        sp.run(fix_cmd, shell=True, check=False)
+                        import shlex
+                        # SECURITY: fix_cmd must remain hardcoded in installer.py.
+                        # Never make fix_cmd user-controllable — shell injection risk.
+                        sp.run(shlex.split(fix_cmd), shell=False, check=False)
                         console.print(f"     ✅ Fix applied for {check}")
                     except Exception as e:
                         console.print(f"     ❌ Fix failed: {e}")

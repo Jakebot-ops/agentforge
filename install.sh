@@ -108,9 +108,9 @@ install_prerequisites() {
             sudo apt-get install -y -qq python3-pip
         fi
 
-        # Node.js 20.x (via NodeSource if npm missing)
+        # Node.js 22.x (via NodeSource if npm missing)
         if ! command -v npm &>/dev/null; then
-            info "Installing Node.js 20.x..."
+            info "Installing Node.js 22.x..."
             curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - >/dev/null 2>&1
             sudo apt-get install -y -qq nodejs
         fi
@@ -302,6 +302,14 @@ detect_or_install_platform() {
             echo "  • Groq               — groq.com (free tier available)"
             echo ""
             "$OPENCLAW_CMD" configure --section model
+            # Gate: verify configure actually completed
+            if [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; then
+                warn "openclaw.json not found — configure may not have completed."
+                read -rp "  Press Enter to retry 'openclaw configure', or Ctrl-C to exit... " _
+                "$OPENCLAW_CMD" configure
+                [[ ! -f "$HOME/.openclaw/openclaw.json" ]] && fail "OpenClaw not configured. Re-run the installer after running: openclaw configure"
+            fi
+            ok "OpenClaw configured"
         else
             echo ""
             ok "OpenClaw installed. Run this next to configure your AI model:"
