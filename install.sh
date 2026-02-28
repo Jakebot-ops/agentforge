@@ -388,7 +388,7 @@ if [[ ! -d "$DASHBOARD_DIR" ]]; then
     info "Installing dashboard..."
     if git clone -q https://github.com/JakebotLabs/jakebot-dashboard.git "$DASHBOARD_DIR" 2>/dev/null; then
         if command -v npm &>/dev/null; then
-            npm install -q --prefix "$DASHBOARD_DIR" 2>/dev/null && ok "Dashboard ready" || warn "Dashboard deps failed — run: npm install in $DASHBOARD_DIR"
+            npm install -q --prefix "$DASHBOARD_DIR/frontend" 2>/dev/null && ok "Dashboard ready" || warn "Dashboard deps failed — run: npm install in $DASHBOARD_DIR/frontend"
         fi
     else
         warn "Dashboard unavailable (private repo or offline) — skipping"
@@ -541,7 +541,7 @@ if [[ -d "$DASHBOARD_DIR" ]]; then
     [[ "$OPTIONAL_SHOWN" == "false" ]] && echo -e "${BOLD}Optional next steps:${RESET}" && OPTIONAL_SHOWN=true
     echo ""
     echo -e "${BOLD}Dashboard:${RESET}"
-    echo "  agentforge start     # starts dashboard at http://localhost:7788"
+    echo "  agentforge start     # starts dashboard at http://localhost:7842"
 fi
 
 [[ "$OPTIONAL_SHOWN" == "true" ]] && echo ""
