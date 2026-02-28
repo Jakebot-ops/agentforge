@@ -66,21 +66,36 @@ def install_all_components(config: AgentForgeConfig, console) -> dict:
     return results
 
 
+def _venv_pkg_installed(package_name: str) -> bool:
+    """Check if a package is installed in the current Python environment (the agentforge venv)."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "show", package_name],
+        capture_output=True, text=True, timeout=10
+    )
+    return result.returncode == 0
+
+
 def install_components(config: AgentForgeConfig) -> dict:
     """Check and install AgentForge components."""
     results = {}
-    
-    # Check memory system
+
+    # Check memory system — prefer package check, fall back to directory check
+    # (directory check supports Jake's existing OpenClaw workspace install)
     memory_path = config.memory.path
-    if memory_path.exists() and (memory_path / "chroma_db").exists():
-        results["agent-memory-core"] = {"installed": True, "message": f"Found at {memory_path}"}
+    memory_pkg = _venv_pkg_installed("agent-memory-core")
+    memory_dir = memory_path.exists() and (memory_path / "chroma_db").exists()
+    if memory_pkg or memory_dir:
+        how = "pip package" if memory_pkg else f"workspace at {memory_path}"
+        results["agent-memory-core"] = {"installed": True, "message": f"Found ({how})"}
     else:
         results["agent-memory-core"] = {"installed": False, "message": "Not found. Run setup."}
-    
-    # Check healthkit (optional — not yet on PyPI)
+
+    # Check healthkit (optional — installed via GitHub)
+    healthkit_pkg = _venv_pkg_installed("agent-healthkit")
     healthkit_path = config.healthkit.path
-    if healthkit_path.exists() and (healthkit_path / "monitor.py").exists():
-        results["agent-healthkit"] = {"installed": True, "message": f"Found at {str(healthkit_path).strip()}"}
+    healthkit_dir = healthkit_path.exists() and (healthkit_path / "monitor.py").exists()
+    if healthkit_pkg or healthkit_dir:
+        results["agent-healthkit"] = {"installed": True, "message": "Found"}
     else:
         results["agent-healthkit"] = {
             "installed": None,  # None = optional / not a hard failure
@@ -224,24 +239,36 @@ def check_components(config: AgentForgeConfig) -> dict:
         "cmd": "agentforge init" if not DEFAULT_CONFIG_PATH.exists() else None
     }
 
-    # Memory system
+    # Memory system — package check + directory fallback (supports existing OpenClaw installs)
     memory_path = config.memory.path
+    memory_pkg = _venv_pkg_installed("agent-memory-core")
     chroma_exists = (memory_path / "chroma_db").exists()
+    memory_ok = memory_pkg or chroma_exists
     checks["Memory (ChromaDB)"] = {
-        "ok": chroma_exists,
-        "message": f"Database ready at {memory_path}" if chroma_exists else f"No ChromaDB found at {memory_path}",
-        "hint": f"Re-run the installer or: python -c \"import chromadb; chromadb.PersistentClient(path='{memory_path}/chroma_db')\"" if not chroma_exists else None,
-        "cmd": None  # Requires venv python — can't safely auto-fix from here
+        "ok": memory_ok,
+        "message": (
+            "Ready (agent-memory-core)" if memory_pkg
+            else f"Database ready at {memory_path}" if chroma_exists
+            else "Not initialized"
+        ),
+        "hint": "pip install agent-memory-core  (then re-run: agentforge init)" if not memory_ok else None,
+        "cmd": None  # Requires re-init after install — skip auto-fix
     }
 
-    # Healthkit (optional — not yet on PyPI, install from source)
+    # Healthkit — package check + directory fallback (supports existing OpenClaw installs)
+    healthkit_pkg = _venv_pkg_installed("agent-healthkit")
     healthkit_path = config.healthkit.path
     monitor_exists = (healthkit_path / "monitor.py").exists()
+    healthkit_ok = healthkit_pkg or monitor_exists
     checks["HealthKit"] = {
-        "ok": True,  # Not having it is not a blocking error — it's optional
-        "message": "Active (observe mode)" if monitor_exists else "Not installed (optional)",
-        "hint": "git clone https://github.com/JakebotLabs/agent-healthkit.git && pip install -e agent-healthkit" if not monitor_exists else None,
-        "cmd": None  # Has && operator — not safe with shell=False; skip auto-fix
+        "ok": True,  # Optional — not a blocking error
+        "message": (
+            "Active (agent-healthkit)" if healthkit_pkg
+            else "Active (workspace install)" if monitor_exists
+            else "Not installed (optional)"
+        ),
+        "hint": "pip install git+https://github.com/JakebotLabs/agent-healthkit.git" if not healthkit_ok else None,
+        "cmd": None
     }
 
     # Dashboard
