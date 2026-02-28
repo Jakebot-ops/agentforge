@@ -305,7 +305,7 @@ detect_or_install_platform() {
             # Gate: verify configure actually completed
             if [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; then
                 warn "openclaw.json not found — configure may not have completed."
-                read -rp "  Press Enter to retry 'openclaw configure', or Ctrl-C to exit... " _
+                read -rp "  Press Enter to retry 'openclaw configure', or Ctrl-C to exit... " _ < /dev/tty
                 "$OPENCLAW_CMD" configure
                 [[ ! -f "$HOME/.openclaw/openclaw.json" ]] && fail "OpenClaw not configured. Re-run the installer after running: openclaw configure"
             fi
@@ -319,10 +319,10 @@ detect_or_install_platform() {
             echo "  Open a new terminal, run: openclaw configure"
             echo "  Then come back here and press Enter to continue..."
             echo ""
-            if [[ -t 1 ]]; then
-                # Interactive: wait for user to complete configure
+            # Read from /dev/tty directly — works even when stdin is a pipe (curl|bash)
+            if [[ -e /dev/tty ]]; then
                 while [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; do
-                    read -rp "  Press Enter once 'openclaw configure' is complete... " _
+                    read -rp "  Press Enter once 'openclaw configure' is complete... " _ < /dev/tty
                     if [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; then
                         warn "openclaw.json not found yet. Please run 'openclaw configure' first."
                     fi
