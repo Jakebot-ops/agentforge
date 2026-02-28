@@ -210,15 +210,31 @@ def start(dashboard: bool, healthkit: bool):
     config = load_config()
     console.print("[bold blue]🚀 Starting AgentForge...[/]")
     
-    results = start_services(config, dashboard=dashboard, healthkit=healthkit)
-    
+    try:
+        results = start_services(config, dashboard=dashboard, healthkit=healthkit)
+    except Exception as e:
+        console.print(f"  [yellow]⚠ Service startup error: {e}[/]")
+        console.print("  [dim]Run 'agentforge doctor' to diagnose.[/]")
+        return  # exit 0 — optional services failing is not fatal
+
+    any_running = False
     for service, status in results.items():
-        icon = "✅" if status["running"] else "❌"
+        if status["running"]:
+            icon = "✅"
+            any_running = True
+        else:
+            # Optional services not running is not an error
+            icon = "⚠️ " if status.get("message") != "Not installed" else "ℹ️ "
         console.print(f"  {icon} {service}: {status['message']}")
-    
+
     if results.get("dashboard", {}).get("running"):
         url = f"http://{config.dashboard.host}:{config.dashboard.port}"
         console.print(f"\n[green]Dashboard running at {url}[/]")
+
+    if not any_running:
+        console.print("\n  [dim]No services started. Run 'agentforge doctor' for details.[/]")
+    else:
+        console.print("\n  [green]✓ AgentForge running.[/] Use 'agentforge status' to check services.")
 
 
 @cli.command()
