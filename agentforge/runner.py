@@ -15,7 +15,7 @@ def start_services(config: AgentForgeConfig, dashboard: bool = True, healthkit: 
 
     # Start dashboard
     if dashboard and config.dashboard.enabled:
-        dashboard_path = config.workspace / "jakebot-dashboard"
+        dashboard_path = config.workspace / "components" / "agentforge-dashboard"
         if dashboard_path.exists():
             venv_python = get_venv_python(dashboard_path)
             if venv_python.exists():
@@ -30,7 +30,7 @@ def start_services(config: AgentForgeConfig, dashboard: bool = True, healthkit: 
                 (PIDFILE_DIR / "dashboard.pid").write_text(str(proc.pid))
                 results["dashboard"] = {"running": True, "message": f"Started on port {config.dashboard.port}", "pid": proc.pid}
             else:
-                results["dashboard"] = {"running": False, "message": "venv not found. Run: cd jakebot-dashboard && python -m venv venv && pip install -e ."}
+                results["dashboard"] = {"running": False, "message": "venv not found. Run: cd components/agentforge-dashboard && python -m venv venv && pip install -e ."}
         else:
             results["dashboard"] = {"running": False, "message": "Dashboard not installed"}
 

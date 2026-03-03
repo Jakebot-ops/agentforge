@@ -1,18 +1,16 @@
 """Configuration management for AgentForge."""
 
 from pathlib import Path
-from typing import Union
 from pydantic import BaseModel, field_serializer
 import yaml
 
 DEFAULT_CONFIG_PATH = Path.home() / ".agentforge" / "agentforge.yml"
+DEFAULT_WORKSPACE = Path.home() / ".agentforge"
 
 
 class MemoryConfig(BaseModel):
     enabled: bool = True
-    # Default: ~/.agentforge/workspace/vector_memory
-    # Overridden by cli.py init() when OpenClaw workspace is detected
-    path: Path = Path.home() / ".agentforge" / "workspace" / "vector_memory"
+    path: Path = DEFAULT_WORKSPACE / "components" / "agent-memory-core"
 
     @field_serializer('path')
     def serialize_path(self, path: Path) -> str:
@@ -21,9 +19,7 @@ class MemoryConfig(BaseModel):
 
 class HealthkitConfig(BaseModel):
     enabled: bool = True
-    # Default: ~/.agentforge/workspace/healthkit_internal
-    # Overridden by cli.py init() when OpenClaw workspace is detected
-    path: Path = Path.home() / ".agentforge" / "workspace" / "healthkit_internal"
+    path: Path = DEFAULT_WORKSPACE / "components" / "agent-healthkit"
     mode: str = "observe"  # observe | heal
 
     @field_serializer('path')
@@ -39,10 +35,8 @@ class DashboardConfig(BaseModel):
 
 class AgentForgeConfig(BaseModel):
     version: str = "1"
-    platform: str = "openclaw"  # openclaw | langchain | autogen | standalone
-    # Default: ~/.agentforge/workspace — safe for fresh installs with no OpenClaw
-    # Overridden by cli.py init() when OpenClaw workspace is detected
-    workspace: Path = Path.home() / ".agentforge" / "workspace"
+    platform: str = "standalone"  # openclaw | langchain | autogen | standalone
+    workspace: Path = DEFAULT_WORKSPACE
     memory: MemoryConfig = MemoryConfig()
     healthkit: HealthkitConfig = HealthkitConfig()
     dashboard: DashboardConfig = DashboardConfig()
