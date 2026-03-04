@@ -34,7 +34,7 @@ class TestInstallAllComponents:
         # Should attempt to install all 4 components
         assert "agent-memory-core" in results
         assert "agent-healthkit" in results
-        assert "jakebot-dashboard" in results
+        assert "agentforge-dashboard" in results
         assert "pipeline" in results
 
     def test_updates_existing_repos(self, config, tmp_path):
@@ -118,8 +118,8 @@ class TestInstallComponentsPipelineDetection:
         assert results["pipeline"]["installed"] is None
 
     def test_detects_dashboard_in_components(self, config, tmp_path):
-        """Dashboard should be found at workspace/components/jakebot-dashboard."""
-        dashboard_dir = tmp_path / "workspace" / "components" / "jakebot-dashboard"
+        """Dashboard should be found at workspace/components/agentforge-dashboard."""
+        dashboard_dir = tmp_path / "workspace" / "components" / "agentforge-dashboard"
         dashboard_dir.mkdir(parents=True)
 
         results = install_components(config)
@@ -139,7 +139,7 @@ class TestCheckComponents:
 
     def test_dashboard_check_uses_components_path(self, config, tmp_path):
         """Dashboard check should look in workspace/components/."""
-        dashboard_dir = tmp_path / "workspace" / "components" / "jakebot-dashboard"
+        dashboard_dir = tmp_path / "workspace" / "components" / "agentforge-dashboard"
         dashboard_dir.mkdir(parents=True)
 
         checks = check_components(config)
